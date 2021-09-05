@@ -1,132 +1,133 @@
-#include <string>
-#include <algorithm>
 #include <iostream>
+#include <algorithm>
 
-template <typename T>
-class dynamic_array
+struct singly_ll_node
 {
-	T* data;
-	size_t n;
+	int data;
+	singly_ll_node* next;
+};
+ 
+class singly_ll
+{
+public:
+	using node = singly_ll_node;
+	using node_ptr = node*;
+
+private:
+	node_ptr head;
 
 public:
-	dynamic_array(int n)
+	void push_front(int val)
 	{
-		this->n = n;
-		data = new T[n];
+		auto new_node = new node{val, NULL};
+		if (head != NULL)
+			new_node->next = head;
+		head = new_node;
 	}
 
-	dynamic_array(const dynamic_array<T>& other)
+	void pop_front()
 	{
-		n = other.n;
-		data = new T[n];
-
-		for (int i = 0; i < n; i++)
-			data[i] = other[i];
+		auto first = head;
+		if (head)
+		{
+			head = head->next;
+			delete first;
+		}
 	}
 
-	T& operator[](int index)
+	struct singly_ll_iterator
 	{
-		return data[index];
+	private:
+		node_ptr ptr;
+
+	public:
+		singly_ll_iterator(node_ptr p) : ptr(p) {}
+
+		int& operator*() { return ptr->data; }
+
+		node_ptr get() { return ptr; }
+
+		singly_ll_iterator& operator++() // 선행 증가
+		{
+			ptr = ptr->next;
+			return *this;
+		}
+
+		singly_ll_iterator operator++(int) // 후행 증가
+		{
+			singly_ll_iterator result = *this;
+			++(*this);
+			return result;
+		}
+
+		friend bool operator==(const singly_ll_iterator& left, const singly_ll_iterator& right)
+		{
+			return left.ptr == right.ptr;
+		}
+
+		friend bool operator!=(const singly_ll_iterator& left, const singly_ll_iterator& right)
+		{
+			return left.ptr != right.ptr;
+		}
+	};
+
+	singly_ll_iterator begin() { return singly_ll_iterator(head); }
+	singly_ll_iterator end() { return singly_ll_iterator(NULL); }
+	singly_ll_iterator begin() const { return singly_ll_iterator(head); }
+	singly_ll_iterator end() const { return singly_ll_iterator(NULL); }
+
+	singly_ll() = default;
+
+	singly_ll(const singly_ll& other) : head(NULL)
+	{
+		if (other.head)
+		{
+			head = new node{0, NULL};
+			auto cur = head;
+			auto it = other.begin();
+			while (true)
+			{
+				cur->data = *it;
+
+				auto tmp = it;
+				++tmp;
+				if (tmp == other.end())
+					break;
+
+				cur->next = new node{0, NULL};
+				cur = cur->next;
+				it = tmp;
+			}
+		}
 	}
 
-	const T& operator[](int index) const
+	singly_ll(const std::initializer_list<int>& ilist) : head(NULL)
 	{
-		return data[index];
-	}
-
-	T& at(int index)
-	{
-		if (index < n)
-			return data[index];
-		throw "Index out of range";
-	}
-
-	size_t size() const
-	{
-		return n;
-	}
-
-	~dynamic_array()
-	{
-		delete[] data; // 메모리 릭 방지
-	}
-
-	T* begin() { return data; }
-	const T* begin() const { return data; }
-	T* end() { return data + n; }
-	const T* end() const { return data + n; }
-
-	friend dynamic_array<T> operator+(const dynamic_array<T>& arr1, dynamic_array<T>& arr2)
-	{
-		dynamic_array<T> result(arr1.size() + arr2.size());
-		std::copy(arr1.begin(), arr1.end(), result.begin());
-		std::copy(arr2.begin(), arr2.end(), result.begin() + arr1.size());
-
-		return result;
-	}
-
-	std::string to_string(const std::string& sep = ", ")
-	{
-		if (n == 0)
-			return "";
-
-		std::ostringstream os;
-		os << data[0];
-
-		for (int i = 1; i < n; i++)
-			os << sep << data[i];
-
-		return os.str();
+		for (auto it = std::rbegin(ilist); it != std::rend(ilist); it++)
+			push_front(*it);
 	}
 };
-
-struct student
-{
-	std::string name;
-	int standard;
-};
-
-std::ostream& operator<<(std::ostream& os, const student& s)
-{
-	return (os << "[" << s.name << ", " << s.standard << "]");
-}
 
 int main()
 {
-	int nStudents;
-	std::cout << "1반 학생 수를 입력하세요: ";
-	std::cin >> nStudents;
+	singly_ll sll = {1, 2, 3};
+	sll.push_front(0);
 
-	dynamic_array<student> class1(nStudents);
-	for (int i = 0; i < nStudents; i++)
-	{
-		std::string name;
-		int standard;
-		std::cout << i + 1 << "번째 학생 이름과 나이를 입력하세요: ";
-		std::cin >> name >> standard;
-		class1[i] = student{name, standard};
-	}
+	std::cout << "첫 번째 리스트: ";
+	for (auto i : sll)
+		std::cout << i << " "; // 출력: 0 1 2 3
+	std::cout << std::endl;
 
-	// 배열 크기보다 큰 인덱스의 학생에 접근
-	try
-	{
-		// 아래 주석을 해제하면 프로그램이 비정상 종료합니다.
-		// class1[nStudents] = student {"John", 8}; // 예상할 수 없는 동작
+	auto sll2 = sll;
+	sll2.push_front(-1);
+	std::cout << "첫 번째 리스트를 복사한 후, 맨 앞에 -1을 추가: ";
+	for (auto i : sll2)
+		std::cout << i << ' '; // 출력: -1 0 1 2 3
+	std::cout << std::endl;
 
-		class1.at(nStudents) = student{"John", 8}; // 예외 발생
-	}
-	catch (...)
-	{
-		std::cout << "예외 발생!" << std::endl;
-	}
+	std::cout << "깊은 복사 후 첫 번째 리스트: ";
 
-	// 깊은 복사
-	auto class2 = class1;
-	std::cout << "1반을 복사하여 2반 생성: " << class2.to_string() << std::endl;
-
-	// 두 학급을 합쳐서 새로운 큰 학급을 생성
-	auto class3 = class1 + class2;
-	std::cout << "1반과 2반을 합쳐 3반 생성 : " << class3.to_string() << std::endl;
-
-	return 0;
+	for (auto i : sll)
+		std::cout << i << ' '; // 출력: 0 1 2 3
+	std::cout << std::endl;
 }
